@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+
+._DS_Store
+
+./clean.py
+

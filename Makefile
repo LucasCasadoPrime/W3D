@@ -1,7 +1,7 @@
 SRC_DIR = src
 CC = g++
 SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
-OBJ_NAME = play
+OBJ_NAME = play.out
 INCLUDES_PATH = -I./include -I./include/interface -I/opt/homebrew/Cellar/sfml/2.6.1/include
 LIBS_PATH = -L/opt/homebrew/Cellar/sfml/2.6.1/lib
 COMPILER_FLAGS = -std=c++11 -Wall -g -O0 -v

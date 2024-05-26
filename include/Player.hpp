@@ -8,6 +8,7 @@
 #include <vector>
 #include <map>
 #include <chrono>
+#include <algorithm>
 
 enum class Weapon {
     PISTOL,
@@ -28,10 +29,15 @@ public:
     double getPlaneY() const { return planeY; }
     Weapon getWeapon() const { return weapon; }
     sf::Sprite getCurrentWeaponSprite() const;
-    unsigned int getLife() const { return life; }
-    unsigned int getAmmo() const { return ammo; }   
-    unsigned int getMaxAmmo() const { return maxAmmo; }
     sf::Sound& getWeaponSound() { return weaponSound; }
+    unsigned int getLife() const { return life; }
+    unsigned int getAmmoInMagazine() const { return ammoInMagazine; }
+    unsigned int getMaxAmmoInMagazine() const { return maxAmmoInMagazine; }
+    unsigned int getAmmoInBackpack() const { return ammoInBackpack; }
+    unsigned int getMaxAmmoInBackpack() const { return maxAmmoInBackpack; }
+    sf::Sound& getReloadSound() { return reloadSound; }
+
+
 
     // Setters
     void setPosX(double posX) { this->posX = posX; }
@@ -42,14 +48,21 @@ public:
     void setPlaneY(double planeY) { this->planeY = planeY; }
     void setWeapon(Weapon weapon) { this->weapon = weapon; }
     void setLife(unsigned int life) { this->life = life; }
-    void setAmmo(unsigned int ammo) { this->ammo = ammo; }
-    void setMaxAmmo(unsigned int maxAmmo) { this->maxAmmo = maxAmmo; }
+    void setAmmoInMagazine(unsigned int ammoInMagazine) { this->ammoInMagazine = ammoInMagazine; }
+    void setMaxAmmoInMagazine(unsigned int maxAmmoInMagazine) { this->maxAmmoInMagazine = maxAmmoInMagazine; }
+    void setAmmoInBackpack(unsigned int ammoInBackpack) { this->ammoInBackpack = ammoInBackpack; }
+    void setMaxAmmoInBackpack(unsigned int maxAmmoInBackpack) { this->maxAmmoInBackpack = maxAmmoInBackpack; }
     void setWeaponSound(sf::Sound weaponSound) { this->weaponSound = weaponSound; }
+    void setReloadSound(sf::Sound reloadSound) { this->reloadSound = reloadSound; }
+
 
     // Methods
     void movements(Level& level, std::clock_t oldTime);
     void shoot();
+    void reload();
     void updateAnimation();
+    void reloadAnimation();
+    void recoilAnimation();
 
     double posX, posY;      // Position of the player
     double dirX, dirY;      // Direction vector of the player
@@ -58,11 +71,20 @@ public:
 private:
     void loadWeaponTextures(Weapon weapon, const std::string& basePath, int frameCount);
     void loadWeaponSounds(Weapon weapon, const std::string& basePath);
+    void loadReloadSound(const std::string& basePath);
 
     // stats
     unsigned int life;
-    unsigned int ammo;
-    unsigned int maxAmmo;
+    unsigned int ammoInMagazine;
+    unsigned int maxAmmoInMagazine;
+    unsigned int ammoInBackpack;
+    unsigned int maxAmmoInBackpack;
+
+    //reload
+    sf::SoundBuffer reloadSoundBuffer;
+    sf::Sound reloadSound;
+    bool isReloading;
+    std::chrono::steady_clock::time_point reloadStartTime;
 
     //weapon
     Weapon weapon;

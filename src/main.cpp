@@ -126,8 +126,10 @@ void GameLoop(sf::RenderWindow& window) {
         if (miniMap.getIsDisplayed()) {
             miniMap.render(window, player.posX, player.posY);
         }
+
         player.setWeapon(Weapon::SHOTGUN);
         window.draw(player.getCurrentWeaponSprite());
+
 
         window.display();
     

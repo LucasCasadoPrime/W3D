@@ -31,7 +31,11 @@
 *.out
 *.app
 
-._DS_Store
 
+# Custom
+._DS_Store
+./play.out
+./play.out.dSYM
 ./clean.py
+.vscode
 

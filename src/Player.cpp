@@ -6,20 +6,27 @@
 
 Player::Player(double x, double y, double directionX, double directionY, double planeX, double planeY)
     : posX(x), posY(y), dirX(directionX), dirY(directionY), planeX(planeX), planeY(planeY), 
-      weapon(Weapon::PISTOL), currentFrame(0), isShooting(false), lastFrameChangeTime(std::chrono::steady_clock::now()) {
+      weapon(Weapon::PISTOL), currentFrame(0), isShooting(false),
+      lastFrameChangeTime(std::chrono::steady_clock::now()), 
+      ammoInMagazine(10), maxAmmoInMagazine(10), ammoInBackpack(50), maxAmmoInBackpack(50), life(100), 
+      isReloading(false), reloadStartTime(std::chrono::steady_clock::now()) {
 
     // Load textures for all weapons
     loadWeaponTextures(Weapon::SHOTGUN, "./assets/sprites/weapons/shotgun/shotgun", 5);
     
     // Load sounds for all weapons
-    loadWeaponSounds(Weapon::SHOTGUN, "./assets/sounds/shotgun.wav");
+    loadWeaponSounds(Weapon::SHOTGUN, "./assets/sounds/weapon/shotgun.wav");
+
+    // Load reload sound
+    loadReloadSound("./assets/sounds/action/Ammo.wav");
+    reloadSound.setBuffer(reloadSoundBuffer);
 
     // Set initial sprite for each weapon
     for (auto& pair : weaponTextures) {
         Weapon w = pair.first;
         if (!pair.second.empty()) {
             weaponSprites[w].setTexture(pair.second[0]);
-            weaponSprites[w].setScale(3.0f, 3.0f);
+            weaponSprites[w].setScale(4.0f, 4.0f);
             weaponSprites[w].setPosition(screenWidth / 2 - weaponSprites[w].getGlobalBounds().width / 2, screenHeight - weaponSprites[w].getGlobalBounds().height);
         }
     }
@@ -50,6 +57,12 @@ void Player::loadWeaponSounds(Weapon weapon, const std::string& basePath) {
 
 }
 
+void Player::loadReloadSound(const std::string& basePath) {
+    if (!reloadSoundBuffer.loadFromFile(basePath)) {
+        std::cerr << "Erreur de chargement du son " << basePath << std::endl;
+    }
+}
+
 sf::Sprite Player::getCurrentWeaponSprite() const {
     auto it = weaponSprites.find(weapon);
     if (it != weaponSprites.end()) {
@@ -60,26 +73,75 @@ sf::Sprite Player::getCurrentWeaponSprite() const {
     }
 }
 
+void Player::reload() {
+    if (!isReloading && ammoInMagazine < maxAmmoInMagazine && ammoInBackpack > 0) {
+        isReloading = true;
+        reloadStartTime = std::chrono::steady_clock::now();
+    }
+}
+
+void Player::reloadAnimation() {
+    if (isReloading) {
+        auto currentTime = std::chrono::steady_clock::now();
+        std::chrono::duration<double> reloadTime = currentTime - reloadStartTime;
+
+        // Define the time interval to reload one bullet (e.g., 0.5 seconds per bullet)
+        double timePerBullet = 0.5; 
+
+        if (reloadTime.count() >= timePerBullet) {
+            // Check if there's still room in the magazine and ammo in the backpack
+            if (ammoInMagazine < maxAmmoInMagazine && ammoInBackpack > 0) {
+                // Reload one bullet
+                ammoInMagazine++;
+                ammoInBackpack--;
+
+                // Play reload sound
+                reloadSound.play();
+
+                // Update the reload start time for the next bullet
+                reloadStartTime = currentTime;
+            } else {
+                // Stop reloading if magazine is full or backpack is empty
+                isReloading = false;
+            }
+        }
+
+        // Change weapon texture to the third frame during reloading
+        auto it = weaponTextures.find(weapon);
+        if (it != weaponTextures.end() && it->second.size() > 2) {
+            weaponSprites[weapon].setTexture(it->second[2]); // Set to the third frame
+        }
+    }
+    
+    // Update the weapon sprite to the first frame when reloading is finished
+    if (!isReloading && !isShooting) {
+        auto it = weaponTextures.find(weapon);
+        if (it != weaponTextures.end() && !it->second.empty()) {
+            weaponSprites[weapon].setTexture(it->second[0]); // Reset to the first frame
+        }
+    }
+}
+
 void Player::shoot() {
-    if (!isShooting) {
+    if (!isShooting && ammoInMagazine > 0 && !isReloading) {
         auto it = weaponTextures.find(weapon);
         auto itSound = weaponSoundBuffers.find(weapon);
         if (it != weaponTextures.end() && itSound != weaponSoundBuffers.end() && !it->second.empty()) {
             isShooting = true;
             currentFrame = 0;
-            weaponSprites[weapon].setTexture(it->second[currentFrame]);
-            weaponSprites[weapon].setScale(4.0f, 4.0f);
-            weaponSprites[weapon].setPosition(screenWidth / 2 - weaponSprites[weapon].getGlobalBounds().width / 2, screenHeight - weaponSprites[weapon].getGlobalBounds().height);
+
+            // Play weapon sound
             weaponSound.setBuffer(itSound->second);
             weaponSound.play();
+
+            // Update ammo count
+            ammoInMagazine--;
         }
     }
 }
 
-
-
 void Player::updateAnimation() {
-    if (isShooting) {
+    if (isShooting && !isReloading) { // Ensure no animation update during reload
         auto currentTime = std::chrono::steady_clock::now();
         std::chrono::duration<double> frameTime = currentTime - lastFrameChangeTime;
         if (frameTime.count() > 0.1) {
@@ -99,6 +161,7 @@ void Player::updateAnimation() {
         }
     }
 }
+
 
 void Player::movements(Level& level, std::clock_t oldTime) {
     std::clock_t newTime = std::clock();
@@ -150,5 +213,10 @@ void Player::movements(Level& level, std::clock_t oldTime) {
         shoot();
     }
 
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::R)) {
+        reload();
+    }
+
     updateAnimation();
+    reloadAnimation();
 }
